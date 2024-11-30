@@ -16,11 +16,43 @@ shapes = {
 
 # Sidebar Controls
 st.sidebar.title("Controls")
+
+# Rotation angle
 angle = st.sidebar.slider("Rotation Angle (°)", 0, 360, 0)
+angle_input = st.sidebar.text_input("Exact Angle", value=str(angle))
+
+# Vector X
 vector_x = st.sidebar.slider("Vector X", -30, 30, 0)
+vector_x_input = st.sidebar.text_input("Exact Vector X", value=str(vector_x))
+
+# Vector Y
 vector_y = st.sidebar.slider("Vector Y", -30, 30, 0)
+vector_y_input = st.sidebar.text_input("Exact Vector Y", value=str(vector_y))
+
+# Center X
 center_x = st.sidebar.slider("Center X", -10, 10, 0)
+center_x_input = st.sidebar.text_input("Exact Center X", value=str(center_x))
+
+# Center Y
 center_y = st.sidebar.slider("Center Y", -10, 10, 0)
+center_y_input = st.sidebar.text_input("Exact Center Y", value=str(center_y))
+
+# Update slider values if exact inputs are modified
+try:
+    angle = int(angle_input)
+    vector_x = int(vector_x_input)
+    vector_y = int(vector_y_input)
+    center_x = int(center_x_input)
+    center_y = int(center_y_input)
+except ValueError:
+    st.sidebar.error("Please enter valid integers for the exact values.")
+
+# Zoom Controls
+st.sidebar.title("Zoom")
+x_min = st.sidebar.slider("X-axis Min", -100, 0, -10)
+x_max = st.sidebar.slider("X-axis Max", 0, 100, 10)
+y_min = st.sidebar.slider("Y-axis Min", -100, 0, -10)
+y_max = st.sidebar.slider("Y-axis Max", 0, 100, 10)
 
 # Shape Visibility Checkboxes
 shape_visibility = {}
@@ -44,8 +76,8 @@ def translate_shape(shape_coords, vector):
 fig, ax = plt.subplots(figsize=(8, 8))
 ax.axhline(0, color="black", linewidth=0.5)
 ax.axvline(0, color="black", linewidth=0.5)
-ax.set_xlim(-10, 10)
-ax.set_ylim(-10, 10)
+ax.set_xlim(x_min, x_max)
+ax.set_ylim(y_min, y_max)
 ax.set_aspect("equal")
 ax.grid(color="gray", linestyle="--", linewidth=0.5)
 
