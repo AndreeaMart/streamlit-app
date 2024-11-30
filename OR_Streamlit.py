@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 import time
 
 # Define shapes
-scaling_factor = 2
+scaling_factor = 4  # Scale down the shapes
 shapes = {
     "Small Triangle": np.array([[2, 2], [8, 2], [5, 10]]) / scaling_factor,
     "Small Square": np.array([[12, 12], [18, 12], [18, 18], [12, 18]]) / scaling_factor,
@@ -18,11 +18,32 @@ shapes = {
 st.sidebar.title("Controls")
 
 # Rotation angle
-angle = st.sidebar.slider("Rotation Angle (°)", 0, 360, 0)
+start_angle = st.sidebar.slider("Starting Rotation Angle (°)", 0, 360, 0)
+start_angle_input = st.sidebar.text_input("Exact Starting Angle", value=str(start_angle))
+end_angle = st.sidebar.slider("Ending Rotation Angle (°)", 0, 360, 360)
+end_angle_input = st.sidebar.text_input("Exact Ending Angle", value=str(end_angle))
+rotation_step = st.sidebar.slider("Rotation Step (°)", 1, 30, 5)
+rotation_step_input = st.sidebar.text_input("Exact Step", value=str(rotation_step))
 vector_x = st.sidebar.slider("Vector X", -30, 30, 0)
+vector_x_input = st.sidebar.text_input("Exact Vector X", value=str(vector_x))
 vector_y = st.sidebar.slider("Vector Y", -30, 30, 0)
+vector_y_input = st.sidebar.text_input("Exact Vector Y", value=str(vector_y))
 center_x = st.sidebar.slider("Center X", -10, 10, 0)
+center_x_input = st.sidebar.text_input("Exact Center X", value=str(center_x))
 center_y = st.sidebar.slider("Center Y", -10, 10, 0)
+center_y_input = st.sidebar.text_input("Exact Center Y", value=str(center_y))
+
+# Update values from text input boxes
+try:
+    start_angle = int(start_angle_input)
+    end_angle = int(end_angle_input)
+    rotation_step = int(rotation_step_input)
+    vector_x = int(vector_x_input)
+    vector_y = int(vector_y_input)
+    center_x = int(center_x_input)
+    center_y = int(center_y_input)
+except ValueError:
+    st.sidebar.error("Please enter valid integers in the input boxes.")
 
 # Shape Visibility Checkboxes
 shape_visibility = {}
@@ -31,10 +52,10 @@ for name in shapes.keys():
 
 # Zoom Controls
 st.sidebar.title("Zoom")
-x_min = st.sidebar.slider("X-axis Min", -100, 0, -10)
-x_max = st.sidebar.slider("X-axis Max", 0, 100, 10)
-y_min = st.sidebar.slider("Y-axis Min", -100, 0, -10)
-y_max = st.sidebar.slider("Y-axis Max", 0, 100, 10)
+x_min = st.sidebar.slider("X-axis Min", -20, 0, -10)
+x_max = st.sidebar.slider("X-axis Max", 0, 20, 10)
+y_min = st.sidebar.slider("Y-axis Min", -20, 0, -10)
+y_max = st.sidebar.slider("Y-axis Max", 0, 20, 10)
 
 # Dynamic Animation Control
 animate = st.sidebar.button("Start Animation")
@@ -52,59 +73,72 @@ def rotate_shape(shape_coords, angle, center):
 def translate_shape(shape_coords, vector):
     return shape_coords + vector
 
-# Initialize Plotly figure
-fig = go.Figure()
-
 # Plot the shapes
-for name, shape in shapes.items():
-    if shape_visibility[name]:
-        translated_shape = translate_shape(shape, np.array([vector_x, vector_y]))
-        rotated_shape = rotate_shape(translated_shape, angle, np.array([center_x, center_y]))
-        x_coords, y_coords = rotated_shape[:, 0], rotated_shape[:, 1]
-        fig.add_trace(go.Scatter(x=np.append(x_coords, x_coords[0]),
-                                 y=np.append(y_coords, y_coords[0]),
-                                 mode='lines+markers',
-                                 name=name))
+def plot_shapes(angle, vector_x, vector_y, center_x, center_y):
+    fig = go.Figure()
 
-# Add center of rotation
-fig.add_trace(go.Scatter(x=[center_x], y=[center_y],
-                         mode='markers', name="Center of Rotation",
-                         marker=dict(size=10, color="red")))
+    # Add X and Y axes
+    fig.add_trace(go.Scatter(x=[x_min, x_max], y=[0, 0],
+                             mode="lines", name="X-Axis",
+                             line=dict(color="black", dash="dash")))
+    fig.add_trace(go.Scatter(x=[0, 0], y=[y_min, y_max],
+                             mode="lines", name="Y-Axis",
+                             line=dict(color="black", dash="dash")))
 
-# Update layout for zooming and panning
-fig.update_layout(
-    xaxis=dict(range=[x_min, x_max]),
-    yaxis=dict(range=[y_min, y_max]),
-    dragmode='pan',  # Enables dragging for panning
-    template="plotly_white",
-    height=700, width=700
-)
+    # Add grid with discrete steps of 1
+    fig.update_xaxes(
+        tickmode="linear",
+        tick0=0,
+        dtick=1,
+        range=[x_min, x_max],
+        showgrid=True,
+        gridcolor="lightgray",
+    )
+    fig.update_yaxes(
+        tickmode="linear",
+        tick0=0,
+        dtick=1,
+        range=[y_min, y_max],
+        showgrid=True,
+        gridcolor="lightgray",
+    )
 
-st.plotly_chart(fig, use_container_width=True)
+    # Plot each shape
+    for name, shape in shapes.items():
+        if shape_visibility[name]:
+            translated_shape = translate_shape(shape, np.array([vector_x, vector_y]))
+            rotated_shape = rotate_shape(translated_shape, angle, np.array([center_x, center_y]))
+            x_coords, y_coords = rotated_shape[:, 0], rotated_shape[:, 1]
+            fig.add_trace(go.Scatter(x=np.append(x_coords, x_coords[0]),
+                                     y=np.append(y_coords, y_coords[0]),
+                                     mode='lines', fill='toself',
+                                     name=name,
+                                     line=dict(color="blue"),
+                                     fillcolor="rgba(0, 0, 255, 0.2)"))
+
+    # Add center of rotation
+    fig.add_trace(go.Scatter(x=[center_x], y=[center_y],
+                             mode='markers', name="Center of Rotation",
+                             marker=dict(size=10, color="red")))
+
+    # Update layout
+    fig.update_layout(
+        plot_bgcolor="white",  # Set background to white
+        dragmode='pan',
+        template="plotly_white",
+        height=700, width=700
+    )
+
+    return fig
+
+# Display the plot
+placeholder = st.empty()  # Placeholder to overwrite frames during animation
+fig = plot_shapes(start_angle, vector_x, vector_y, center_x, center_y)
+placeholder.plotly_chart(fig, use_container_width=True)
 
 # Handle Animation
 if animate:
-    for i in range(0, 361, 5):  # Rotate from 0 to 360 degrees in steps of 5
-        angle = i
-        fig = go.Figure()
-        for name, shape in shapes.items():
-            if shape_visibility[name]:
-                translated_shape = translate_shape(shape, np.array([vector_x, vector_y]))
-                rotated_shape = rotate_shape(translated_shape, angle, np.array([center_x, center_y]))
-                x_coords, y_coords = rotated_shape[:, 0], rotated_shape[:, 1]
-                fig.add_trace(go.Scatter(x=np.append(x_coords, x_coords[0]),
-                                         y=np.append(y_coords, y_coords[0]),
-                                         mode='lines+markers',
-                                         name=name))
-        fig.add_trace(go.Scatter(x=[center_x], y=[center_y],
-                                 mode='markers', name="Center of Rotation",
-                                 marker=dict(size=10, color="red")))
-        fig.update_layout(
-            xaxis=dict(range=[x_min, x_max]),
-            yaxis=dict(range=[y_min, y_max]),
-            dragmode='pan',
-            template="plotly_white",
-            height=700, width=700
-        )
-        st.plotly_chart(fig, use_container_width=True)
+    for angle in range(start_angle, end_angle + 1, rotation_step):  # Rotate smoothly between start and end angles
+        fig = plot_shapes(angle, vector_x, vector_y, center_x, center_y)
+        placeholder.plotly_chart(fig, use_container_width=True, key=f"rotation_{angle}")  # Add a unique key for each frame
         time.sleep(0.1)  # Pause for smooth animation
