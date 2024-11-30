@@ -1,7 +1,7 @@
 import numpy as np
 import streamlit as st
-import matplotlib.pyplot as plt
-from matplotlib.patches import Polygon
+import plotly.graph_objects as go
+import time
 
 # Define shapes
 scaling_factor = 2
@@ -16,43 +16,18 @@ shapes = {
 
 # Sidebar Controls
 st.sidebar.title("Controls")
-
-# Rotation angle
-angle = st.sidebar.slider("Rotation Angle (°)", 0, 360, 0)
-angle_input = st.sidebar.text_input("Exact Angle", value=str(angle))
-
-# Vector X
+angle = st.sidebar.slider("Rotation Angle (°)", 0, 360, 0, step=1)
 vector_x = st.sidebar.slider("Vector X", -30, 30, 0)
-vector_x_input = st.sidebar.text_input("Exact Vector X", value=str(vector_x))
-
-# Vector Y
 vector_y = st.sidebar.slider("Vector Y", -30, 30, 0)
-vector_y_input = st.sidebar.text_input("Exact Vector Y", value=str(vector_y))
-
-# Center X
 center_x = st.sidebar.slider("Center X", -10, 10, 0)
-center_x_input = st.sidebar.text_input("Exact Center X", value=str(center_x))
-
-# Center Y
 center_y = st.sidebar.slider("Center Y", -10, 10, 0)
-center_y_input = st.sidebar.text_input("Exact Center Y", value=str(center_y))
-
-# Update slider values if exact inputs are modified
-try:
-    angle = int(angle_input)
-    vector_x = int(vector_x_input)
-    vector_y = int(vector_y_input)
-    center_x = int(center_x_input)
-    center_y = int(center_y_input)
-except ValueError:
-    st.sidebar.error("Please enter valid integers for the exact values.")
+animate = st.sidebar.checkbox("Animate Rotation", value=False)
 
 # Zoom Controls
-st.sidebar.title("Zoom")
-x_min = st.sidebar.slider("X-axis Min", -100, 0, -10)
-x_max = st.sidebar.slider("X-axis Max", 0, 100, 10)
-y_min = st.sidebar.slider("Y-axis Min", -100, 0, -10)
-y_max = st.sidebar.slider("Y-axis Max", 0, 100, 10)
+x_min = st.sidebar.slider("X-axis Min", -50, 0, -10)
+x_max = st.sidebar.slider("X-axis Max", 0, 50, 10)
+y_min = st.sidebar.slider("Y-axis Min", -50, 0, -10)
+y_max = st.sidebar.slider("Y-axis Max", 0, 50, 10)
 
 # Shape Visibility Checkboxes
 shape_visibility = {}
@@ -72,25 +47,50 @@ def rotate_shape(shape_coords, angle, center):
 def translate_shape(shape_coords, vector):
     return shape_coords + vector
 
-# Plot the shapes
-fig, ax = plt.subplots(figsize=(8, 8))
-ax.axhline(0, color="black", linewidth=0.5)
-ax.axvline(0, color="black", linewidth=0.5)
-ax.set_xlim(x_min, x_max)
-ax.set_ylim(y_min, y_max)
-ax.set_aspect("equal")
-ax.grid(color="gray", linestyle="--", linewidth=0.5)
+# Plot the shapes dynamically using Plotly
+def plot_shapes(angle, vector, center):
+    fig = go.Figure()
 
-for name, shape in shapes.items():
-    if shape_visibility[name]:
-        translated_shape = translate_shape(shape, np.array([vector_x, vector_y]))
-        rotated_shape = rotate_shape(translated_shape, angle, np.array([center_x, center_y]))
-        polygon = Polygon(rotated_shape, closed=True, fill=True, edgecolor="blue", alpha=0.5)
-        ax.add_patch(polygon)
+    # Add shapes
+    for name, shape in shapes.items():
+        if shape_visibility[name]:
+            translated_shape = translate_shape(shape, np.array([vector[0], vector[1]]))
+            rotated_shape = rotate_shape(translated_shape, angle, np.array([center[0], center[1]]))
+            rotated_shape = np.vstack((rotated_shape, rotated_shape[0]))  # Close the shape
+            fig.add_trace(go.Scatter(
+                x=rotated_shape[:, 0],
+                y=rotated_shape[:, 1],
+                mode="lines",
+                name=name,
+                fill="toself"
+            ))
 
-# Plot center of rotation
-ax.plot(center_x, center_y, "ro", label="Center of Rotation")
-ax.legend()
+    # Add center of rotation
+    fig.add_trace(go.Scatter(
+        x=[center[0]],
+        y=[center[1]],
+        mode="markers",
+        name="Center of Rotation",
+        marker=dict(size=10, color="red")
+    ))
 
-# Display the plot in Streamlit
-st.pyplot(fig)
+    # Set axes and grid
+    fig.update_layout(
+        xaxis=dict(range=[x_min, x_max], zeroline=True),
+        yaxis=dict(range=[y_min, y_max], zeroline=True),
+        title="Interactive Shape Transformation",
+        showlegend=True,
+        template="plotly_white"
+    )
+    return fig
+
+# Animate if the checkbox is selected
+if animate:
+    for i in range(0, 360, 5):  # Animate through angles 0 to 360
+        fig = plot_shapes(i, [vector_x, vector_y], [center_x, center_y])
+        st.plotly_chart(fig, use_container_width=True)
+        time.sleep(0.05)
+else:
+    # Static plot
+    fig = plot_shapes(angle, [vector_x, vector_y], [center_x, center_y])
+    st.plotly_chart(fig, use_container_width=True)
