@@ -2,6 +2,7 @@ import numpy as np
 import streamlit as st
 import plotly.graph_objects as go
 import time
+import ast  # To safely evaluate string input for coordinates
 
 # Define shapes
 scaling_factor = 4  # Scale down the shapes
@@ -17,13 +18,31 @@ shapes = {
 # Sidebar Controls
 st.sidebar.title("Controls")
 
-# Rotation angle
+# Add input for custom shape
+st.sidebar.title("Custom Shape")
+custom_shape_input = st.sidebar.text_area("Enter Coordinates (e.g., [[1,1], [2,3], [3,1]]):")
+if custom_shape_input:
+    try:
+        custom_shape = np.array(ast.literal_eval(custom_shape_input)) / scaling_factor
+        shapes["Custom Shape"] = custom_shape
+    except (ValueError, SyntaxError):
+        st.sidebar.error("Invalid input! Ensure the coordinates are in the correct format.")
+
+# Rotation angle and direction
 start_angle = st.sidebar.slider("Starting Rotation Angle (°)", 0, 360, 0)
 start_angle_input = st.sidebar.text_input("Exact Starting Angle", value=str(start_angle))
 end_angle = st.sidebar.slider("Ending Rotation Angle (°)", 0, 360, 360)
 end_angle_input = st.sidebar.text_input("Exact Ending Angle", value=str(end_angle))
 rotation_step = st.sidebar.slider("Rotation Step (°)", 1, 30, 5)
 rotation_step_input = st.sidebar.text_input("Exact Step", value=str(rotation_step))
+
+# Add dropdown for rotation direction
+rotation_direction = st.sidebar.selectbox("Rotation Direction", ["Clockwise", "Anti-clockwise"])
+
+# Adjust rotation direction
+rotation_multiplier = -1 if rotation_direction == "Clockwise" else 1
+
+# Translation vector
 vector_x = st.sidebar.slider("Vector X", -30, 30, 0)
 vector_x_input = st.sidebar.text_input("Exact Vector X", value=str(vector_x))
 vector_y = st.sidebar.slider("Vector Y", -30, 30, 0)
@@ -62,7 +81,7 @@ animate = st.sidebar.button("Start Animation")
 
 # Function to rotate a shape
 def rotate_shape(shape_coords, angle, center):
-    angle_rad = np.radians(angle)
+    angle_rad = np.radians(angle * rotation_multiplier)  # Adjust direction
     rotation_matrix = np.array([[np.cos(angle_rad), -np.sin(angle_rad)],
                                  [np.sin(angle_rad), np.cos(angle_rad)]])
     translated_coords = shape_coords - center
