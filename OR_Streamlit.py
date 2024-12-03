@@ -38,7 +38,7 @@ if st.sidebar.button("Update Shape"):
     try:
         custom_shape_coords = ast.literal_eval(custom_shape_input)  # Safely evaluate input
         st.session_state.custom_shape_coords = custom_shape_coords  # Persist in session state
-        shapes["Custom Shape"] = np.array(custom_shape_coords) / scaling_factor
+        shapes["Custom Shape"] = np.array(custom_shape_coords)
         st.sidebar.success("Custom shape updated successfully!")
     except (ValueError, SyntaxError):
         st.sidebar.error("Invalid input! Ensure the coordinates are in the correct format.")
