@@ -41,9 +41,7 @@ if st.sidebar.button("Update Shape"):
 
 # Ensure custom shape is always in the shape_visibility dictionary
 if "Custom Shape" in shapes:
-    shape_visibility = {name: True for name in shapes.keys()}
-else:
-    shape_visibility = {name: True for name in shapes.keys() if name != "Custom Shape"}
+    shape_visibility = True
 
 # Rotation angle and direction
 start_angle = st.sidebar.slider("Starting Rotation Angle (°)", 0, 360, 0)
