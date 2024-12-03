@@ -34,9 +34,16 @@ if st.sidebar.button("Update Shape"):
     try:
         st.session_state.custom_shape = custom_shape_input
         custom_shape = np.array(ast.literal_eval(st.session_state.custom_shape)) / scaling_factor
-        shapes["Custom Shape"] = custom_shape
+        shapes["Custom Shape"] = custom_shape  # Add or update custom shape
+        st.sidebar.success("Custom shape updated successfully!")
     except (ValueError, SyntaxError):
         st.sidebar.error("Invalid input! Ensure the coordinates are in the correct format.")
+
+# Ensure custom shape is always in the shape_visibility dictionary
+if "Custom Shape" in shapes:
+    shape_visibility = {name: True for name in shapes.keys()}
+else:
+    shape_visibility = {name: True for name in shapes.keys() if name != "Custom Shape"}
 
 # Rotation angle and direction
 start_angle = st.sidebar.slider("Starting Rotation Angle (°)", 0, 360, 0)
