@@ -4,7 +4,11 @@ import plotly.graph_objects as go
 import time
 import ast  # To safely evaluate string input for coordinates
 
-# Define shapes
+# Initialize session state for custom shape
+if "custom_shape_coords" not in st.session_state:
+    st.session_state.custom_shape_coords = None  # Stores the coordinates of the custom shape
+
+# Define default shapes
 scaling_factor = 4  # Scale down the shapes
 shapes = {
     "Small Triangle": np.array([[2, 2], [8, 2], [5, 10]]) / scaling_factor,
@@ -15,33 +19,29 @@ shapes = {
                             [0, -5], [-8, -10], [-6, -2], [-10, 5], [-4, 5]]) / scaling_factor,
 }
 
+# Add custom shape from session state if it exists
+if st.session_state.custom_shape_coords is not None:
+    shapes["Custom Shape"] = np.array(st.session_state.custom_shape_coords)
+
 # Sidebar Controls
 st.sidebar.title("Controls")
 
 # Add input for custom shape
 st.sidebar.title("Custom Shape")
-if "custom_shape" not in st.session_state:
-    st.session_state.custom_shape = ""
-
-# Text area for custom shape input
 custom_shape_input = st.sidebar.text_area(
     "Enter Coordinates (e.g., [[1,1], [2,3], [3,1]]):",
-    value=st.session_state.custom_shape,
+    value="" if st.session_state.custom_shape_coords is None else str(st.session_state.custom_shape_coords),
 )
 
 # Button to update custom shape
 if st.sidebar.button("Update Shape"):
     try:
-        st.session_state.custom_shape = custom_shape_input
-        custom_shape = np.array(ast.literal_eval(st.session_state.custom_shape)) / scaling_factor
-        shapes["Custom Shape"] = custom_shape  # Add or update custom shape
+        custom_shape_coords = ast.literal_eval(custom_shape_input)  # Safely evaluate input
+        st.session_state.custom_shape_coords = custom_shape_coords  # Persist in session state
+        shapes["Custom Shape"] = np.array(custom_shape_coords) / scaling_factor
         st.sidebar.success("Custom shape updated successfully!")
     except (ValueError, SyntaxError):
         st.sidebar.error("Invalid input! Ensure the coordinates are in the correct format.")
-
-# Ensure custom shape is always in the shape_visibility dictionary
-if "Custom Shape" in shapes:
-    shape_visibility = True
 
 # Rotation angle and direction
 start_angle = st.sidebar.slider("Starting Rotation Angle (°)", 0, 360, 0)
