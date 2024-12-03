@@ -20,10 +20,20 @@ st.sidebar.title("Controls")
 
 # Add input for custom shape
 st.sidebar.title("Custom Shape")
-custom_shape_input = st.sidebar.text_area("Enter Coordinates (e.g., [[1,1], [2,3], [3,1]]):")
-if custom_shape_input:
+if "custom_shape" not in st.session_state:
+    st.session_state.custom_shape = ""
+
+# Text area for custom shape input
+custom_shape_input = st.sidebar.text_area(
+    "Enter Coordinates (e.g., [[1,1], [2,3], [3,1]]):",
+    value=st.session_state.custom_shape,
+)
+
+# Button to update custom shape
+if st.sidebar.button("Update Shape"):
     try:
-        custom_shape = np.array(ast.literal_eval(custom_shape_input)) / scaling_factor
+        st.session_state.custom_shape = custom_shape_input
+        custom_shape = np.array(ast.literal_eval(st.session_state.custom_shape)) / scaling_factor
         shapes["Custom Shape"] = custom_shape
     except (ValueError, SyntaxError):
         st.sidebar.error("Invalid input! Ensure the coordinates are in the correct format.")
